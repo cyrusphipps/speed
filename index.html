@@ -8,9 +8,38 @@
         let speedReadings = [];
         const MAX_READINGS = 5;
         const SPEED_THRESHOLD = 0.1; // Speed threshold in meters per second
+        const UPDATE_INTERVAL = 100; // 100 milliseconds for more frequent updates
+
+        // Kalman filter variables
+        let kalmanFilter = {
+            R: 0.01, // Process noise
+            Q: 3, // Measurement noise
+            A: 1,
+            B: 0,
+            C: 1,
+            cov: NaN,
+            x: NaN,
+
+            filter(z) {
+                if (isNaN(this.x)) {
+                    this.x = (1 / this.C) * z;
+                    this.cov = (1 / this.C) * this.Q * (1 / this.C);
+                } else {
+                    let predX = (this.A * this.x) + (this.B * 0);
+                    let predCov = ((this.A * this.cov) * this.A) + this.R;
+                    let K = predCov * this.C * (1 / ((this.C * predCov * this.C) + this.Q));
+                    this.x = predX + K * (z - (this.C * predX));
+                    this.cov = predCov - (K * this.C * predCov);
+                }
+                return this.x;
+            }
+        };
 
         function calculateSpeed(position) {
             let speedMps = position.coords.speed;
+
+            // Apply Kalman filter to smooth the speed
+            speedMps = kalmanFilter.filter(speedMps);
 
             // Ignore very small speed values that may be noise
             if (speedMps === null || speedMps < SPEED_THRESHOLD) {
@@ -51,7 +80,7 @@
                 navigator.geolocation.watchPosition(calculateSpeed, showError, {
                     enableHighAccuracy: true,
                     maximumAge: 0,
-                    timeout: 5000
+                    timeout: UPDATE_INTERVAL
                 });
             } else {
                 alert("Geolocation is not supported by this browser.");
