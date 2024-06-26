@@ -7,14 +7,14 @@
     <script>
         let speedReadings = [];
         const MAX_READINGS = 5;
-        const POLL_INTERVAL = 100; // 100 milliseconds for 10 times per second
+        const SPEED_THRESHOLD = 0.1; // Speed threshold in meters per second
 
         function calculateSpeed(position) {
             let speedMps = position.coords.speed;
 
-            if (speedMps === null) {
-                document.getElementById('speed').innerText = 'Speed data is unavailable.';
-                return;
+            // Ignore very small speed values that may be noise
+            if (speedMps === null || speedMps < SPEED_THRESHOLD) {
+                speedMps = 0;
             }
 
             // Add new reading and maintain a fixed number of readings
@@ -46,9 +46,9 @@
             }
         }
 
-        function pollLocation() {
+        function requestLocationPermission() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(calculateSpeed, showError, {
+                navigator.geolocation.watchPosition(calculateSpeed, showError, {
                     enableHighAccuracy: true,
                     maximumAge: 0,
                     timeout: 5000
@@ -61,16 +61,15 @@
         document.addEventListener('DOMContentLoaded', (event) => {
             navigator.permissions.query({name: 'geolocation'}).then(function(result) {
                 if (result.state === 'granted') {
-                    setInterval(pollLocation, POLL_INTERVAL);
+                    requestLocationPermission();
                 } else if (result.state === 'prompt') {
-                    pollLocation();
-                    setInterval(pollLocation, POLL_INTERVAL);
+                    requestLocationPermission();
                 } else if (result.state === 'denied') {
                     alert("Location access is denied. Please enable it in your browser settings.");
                 }
                 result.onchange = function() {
                     if (result.state === 'granted') {
-                        setInterval(pollLocation, POLL_INTERVAL);
+                        requestLocationPermission();
                     } else if (result.state === 'denied') {
                         alert("Location access is denied. Please enable it in your browser settings.");
                     }
