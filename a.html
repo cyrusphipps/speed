@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Detection</title>
+    <script>
+        function calculateSpeed(position) {
+            var speedMps = position.coords.speed;
+
+            if (speedMps === null) {
+                document.getElementById('speed').innerText = 'Speed data is unavailable.';
+                return;
+            }
+
+            var speedMph = speedMps * 2.23694;
+            document.getElementById('speed').innerText = speedMph.toFixed(2) + ' MPH';
+        }
+
+        function showError(error) {
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    alert("Permission denied. Please enable location permissions in your browser and device settings.");
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    alert("Location information is unavailable.");
+                    break;
+                case error.TIMEOUT:
+                    alert("The request to get user location timed out.");
+                    break;
+                case error.UNKNOWN_ERROR:
+                    alert("An unknown error occurred.");
+                    break;
+            }
+        }
+
+        function requestLocationPermission() {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(calculateSpeed, showError, {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 5000
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            // Check if permissions are already granted
+            navigator.permissions.query({name: 'geolocation'}).then(function(result) {
+                if (result.state === 'granted') {
+                    // Permission is already granted
+                    requestLocationPermission();
+                } else if (result.state === 'prompt') {
+                    // Permission needs to be requested
+                    requestLocationPermission();
+                } else if (result.state === 'denied') {
+                    // Permission was denied
+                    alert("Location access is denied. Please enable it in your browser settings.");
+                }
+                result.onchange = function() {
+                    if (result.state === 'granted') {
+                        requestLocationPermission();
+                    } else if (result.state === 'denied') {
+                        alert("Location access is denied. Please enable it in your browser settings.");
+                    }
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Speed Detection</h1>
+    <p>Current speed: <span id="speed">Calculating...</span></p>
+</body>
+</html>
