@@ -9,6 +9,7 @@
         const MAX_READINGS = 5;
         const SPEED_THRESHOLD = 0.1; // Speed threshold in meters per second
         const UPDATE_INTERVAL = 100; // 100 milliseconds for more frequent updates
+        const ZERO_SPEED_COUNT = 3; // Number of consecutive zero readings to consider stopped
 
         // Kalman filter variables
         let kalmanFilter = {
@@ -52,10 +53,16 @@
                 speedReadings.shift();
             }
 
-            // Calculate average speed
-            let averageSpeedMps = speedReadings.reduce((a, b) => a + b, 0) / speedReadings.length;
-            let speedMph = averageSpeedMps * 2.23694;
-            document.getElementById('speed').innerText = speedMph.toFixed(2) + ' MPH';
+            // Check for consecutive zero speed readings
+            const zeroSpeedCount = speedReadings.slice(-ZERO_SPEED_COUNT).filter(speed => speed === 0).length;
+            if (zeroSpeedCount >= ZERO_SPEED_COUNT) {
+                document.getElementById('speed').innerText = '0.00 MPH';
+            } else {
+                // Calculate average speed
+                let averageSpeedMps = speedReadings.reduce((a, b) => a + b, 0) / speedReadings.length;
+                let speedMph = averageSpeedMps * 2.23694;
+                document.getElementById('speed').innerText = speedMph.toFixed(2) + ' MPH';
+            }
         }
 
         function showError(error) {
