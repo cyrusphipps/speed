@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speed Detection V1.0</title>
+    <title>Speed Detection V1.1</title>
     <script>
         let speedReadings = [];
         const MAX_READINGS = 5;
         const SPEED_THRESHOLD = 0.5; // Speed threshold in meters per second to ignore noise
-        const UPDATE_INTERVAL = 100; // 100 milliseconds for more frequent updates
+        const POLL_INTERVAL = 10; // 10 milliseconds for more frequent updates
         const ZERO_SPEED_COUNT = 3; // Number of consecutive zero readings to consider stopped
 
         // Advanced Kalman filter for GPS speed
@@ -101,12 +101,12 @@
             }
         }
 
-        function requestLocationPermission() {
+        function pollLocation() {
             if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(calculateSpeed, showError, {
+                navigator.geolocation.getCurrentPosition(calculateSpeed, showError, {
                     enableHighAccuracy: true,
                     maximumAge: 0,
-                    timeout: UPDATE_INTERVAL
+                    timeout: POLL_INTERVAL
                 });
             } else {
                 alert("Geolocation is not supported by this browser.");
@@ -116,15 +116,16 @@
         document.addEventListener('DOMContentLoaded', (event) => {
             navigator.permissions.query({name: 'geolocation'}).then(function(result) {
                 if (result.state === 'granted') {
-                    requestLocationPermission();
+                    setInterval(pollLocation, POLL_INTERVAL);
                 } else if (result.state === 'prompt') {
                     requestLocationPermission();
+                    setInterval(pollLocation, POLL_INTERVAL);
                 } else if (result.state === 'denied') {
                     alert("Location access is denied. Please enable it in your browser settings.");
                 }
                 result.onchange = function() {
                     if (result.state === 'granted') {
-                        requestLocationPermission();
+                        setInterval(pollLocation, POLL_INTERVAL);
                     } else if (result.state === 'denied') {
                         alert("Location access is denied. Please enable it in your browser settings.");
                     }
@@ -151,7 +152,14 @@
     </script>
 </head>
 <body>
-    <h1>Speed Detection V1.0</h1>
+    <h1>Speed Detection V1.1</h1>
+    <p id="accuracy-status">Ensure high accuracy mode is enabled on your device for best results. Steps:</p>
+    <ul>
+        <li>Open your device's "Settings".</li>
+        <li>Go to "Location" or "Location services".</li>
+        <li>Make sure "Location" is turned on.</li>
+        <li>Tap on "Mode" or "Location mode" (if available) and select "High accuracy".</li>
+    </ul>
     <p>Current real-time speed: <span id="realtime-speed">Calculating...</span></p>
     <p>Current averaged speed: <span id="averaged-speed">Calculating...</span></p>
 </body>
