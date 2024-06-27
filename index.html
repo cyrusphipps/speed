@@ -4,6 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Speed Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        h1 {
+            font-size: 2em;
+        }
+        p {
+            font-size: 1.5em;
+        }
+        button {
+            font-size: 1em;
+            padding: 10px 20px;
+            margin: 10px;
+        }
+    </style>
 </head>
 <body>
     <h1>Speed Tracker</h1>
@@ -18,8 +36,8 @@
             if (navigator.geolocation) {
                 watchID = navigator.geolocation.watchPosition(showSpeed, handleError, {
                     enableHighAccuracy: true,
-                    maximumAge: 1000,
-                    timeout: 3000
+                    maximumAge: 500,
+                    timeout: 1000
                 });
             } else {
                 alert("Geolocation is not supported by this browser.");
@@ -39,8 +57,8 @@
             // Convert to miles per hour (1 m/s = 2.23694 mph)
             let speedMph = speedMps * 2.23694;
 
-            // Round to 2 decimal places
-            speedMph = (speedMph) ? speedMph.toFixed(2) : 0;
+            // Count any speed under 0.25 mph as 0
+            speedMph = (speedMph < 0.25) ? 0 : speedMph.toFixed(2);
 
             // Update the speed on the page
             document.getElementById("speed").innerText = speedMph;
@@ -55,7 +73,7 @@
                     alert("Location information is unavailable.");
                     break;
                 case error.TIMEOUT:
-                    alert("The request to get user location timed out.");
+                    // No alert for timeout error
                     break;
                 case error.UNKNOWN_ERROR:
                     alert("An unknown error occurred.");
