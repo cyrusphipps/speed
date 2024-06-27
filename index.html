@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speed Tracker V1.3</title>
+    <title>Speed Tracker V1.4</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -19,7 +19,7 @@
     </style>
 </head>
 <body>
-    <h1>Speed Tracker V1.3</h1>
+    <h1>Speed Tracker V1.4</h1>
     <p>Current Speed: <span id="speed">0</span> mph</p>
 
     <script>
@@ -57,11 +57,8 @@
                     // Calculate the average speed
                     let avgSpeed = speedReadings.reduce((a, b) => a + b, 0) / speedReadings.length;
 
-                    // Count any speed under 0.25 mph as 0 to filter out noise
-                    avgSpeed = (avgSpeed < 0.25) ? 0 : avgSpeed.toFixed(2);
-
                     // Update the speed on the page
-                    document.getElementById("speed").innerText = avgSpeed;
+                    document.getElementById("speed").innerText = avgSpeed.toFixed(2);
                 } else {
                     document.getElementById("speed").innerText = 0;
                 }
