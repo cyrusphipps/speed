@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speed Detection V1.2</title>
+    <title>Speed Detection V1.3</title>
     <script>
         let speedReadings = [];
         const MAX_READINGS = 5;
         const SPEED_THRESHOLD = 0.5; // Speed threshold in meters per second to ignore noise
-        const POLL_INTERVAL = 10; // 10 milliseconds for more frequent updates
+        const POLL_INTERVAL = 100; // 100 milliseconds for more frequent updates
         const ZERO_SPEED_COUNT = 3; // Number of consecutive zero readings to consider stopped
 
         // Advanced Kalman filter for GPS speed
@@ -148,7 +148,7 @@
     </script>
 </head>
 <body>
-    <h1>Speed Detection V1.2</h1>
+    <h1>Speed Detection V1.3</h1>
     <p id="accuracy-status">Ensure high accuracy mode is enabled on your device for best results. Steps:</p>
     <ul>
         <li>Open your device's "Settings".</li>
