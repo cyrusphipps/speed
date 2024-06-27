@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speed Tracker V1.2</title>
+    <title>Speed Tracker V1.3</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,41 +16,24 @@
         p {
             font-size: 1.5em;
         }
-        button {
-            font-size: 1em;
-            padding: 10px 20px;
-            margin: 10px;
-        }
     </style>
 </head>
 <body>
-    <h1>Speed Tracker V1.2</h1>
+    <h1>Speed Tracker V1.3</h1>
     <p>Current Speed: <span id="speed">0</span> mph</p>
-    <button onclick="startTracking()">Start Tracking</button>
-    <button onclick="stopTracking()">Stop Tracking</button>
 
     <script>
-        let watchID;
         let speedReadings = [];
         const maxReadings = 5;
 
-        function startTracking() {
-            if (navigator.geolocation) {
-                watchID = navigator.geolocation.watchPosition(showSpeed, handleError, {
-                    enableHighAccuracy: true,
-                    maximumAge: 100,
-                    timeout: 500
-                });
-            } else {
-                alert("Geolocation is not supported by this browser.");
-            }
-        }
-
-        function stopTracking() {
-            if (navigator.geolocation && watchID !== undefined) {
-                navigator.geolocation.clearWatch(watchID);
-            }
-            speedReadings = [];
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(showSpeed, handleError, {
+                enableHighAccuracy: true,
+                maximumAge: 100,
+                timeout: 500
+            });
+        } else {
+            alert("Geolocation is not supported by this browser.");
         }
 
         function showSpeed(position) {
