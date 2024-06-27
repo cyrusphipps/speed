@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speed Tracker</title>
+    <title>Speed Tracker V1.0</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -24,7 +24,7 @@
     </style>
 </head>
 <body>
-    <h1>Speed Tracker</h1>
+    <h1>Speed Tracker V1.0</h1>
     <p>Current Speed: <span id="speed">0</span> mph</p>
     <button onclick="startTracking()">Start Tracking</button>
     <button onclick="stopTracking()">Stop Tracking</button>
@@ -54,14 +54,20 @@
             // Speed in meters per second
             let speedMps = position.coords.speed;
 
-            // Convert to miles per hour (1 m/s = 2.23694 mph)
-            let speedMph = speedMps * 2.23694;
+            // Check if speed is valid and filter out noise
+            if (speedMps !== null && speedMps >= 0) {
+                // Convert to miles per hour (1 m/s = 2.23694 mph)
+                let speedMph = speedMps * 2.23694;
 
-            // Count any speed under 0.25 mph as 0
-            speedMph = (speedMph < 0.25) ? 0 : speedMph.toFixed(2);
+                // Count any speed under 0.25 mph as 0 to filter out noise
+                speedMph = (speedMph < 0.25) ? 0 : speedMph.toFixed(2);
 
-            // Update the speed on the page
-            document.getElementById("speed").innerText = speedMph;
+                // Update the speed on the page
+                document.getElementById("speed").innerText = speedMph;
+            } else {
+                // Speed is not available
+                document.getElementById("speed").innerText = 0;
+            }
         }
 
         function handleError(error) {
