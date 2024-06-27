@@ -3,85 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speed Detection V1.4</title>
+    <title>Speed Detection V1.0</title>
     <script>
-        let speedReadings = [];
-        const MAX_READINGS = 5;
-        const SPEED_THRESHOLD = 0.5; // Speed threshold in meters per second to ignore noise
-        const POLL_INTERVAL = 100; // 100 milliseconds for more frequent updates
-        const ZERO_SPEED_COUNT = 3; // Number of consecutive zero readings to consider stopped
-
-        // Advanced Kalman filter for GPS speed
-        class KalmanFilter {
-            constructor(R, Q) {
-                this.R = R; // Process noise
-                this.Q = Q; // Measurement noise
-                this.A = 1;
-                this.B = 0;
-                this.C = 1;
-                this.cov = NaN;
-                this.x = NaN;
-            }
-
-            filter(z) {
-                if (isNaN(this.x)) {
-                    this.x = (1 / this.C) * z;
-                    this.cov = (1 / this.C) * this.Q * (1 / this.C);
-                } else {
-                    let predX = (this.A * this.x) + (this.B * 0);
-                    let predCov = ((this.A * this.cov) * this.A) + this.R;
-                    let K = predCov * this.C * (1 / ((this.C * predCov * this.C) + this.Q));
-                    this.x = predX + K * (z - (this.C * predX));
-                    this.cov = predCov - (K * this.C * predCov);
-                }
-                return this.x;
-            }
-        }
-
-        const kalmanFilter = new KalmanFilter(0.01, 3);
-
-        let lastPosition = null;
-
         function calculateSpeed(position) {
             let speedMps = position.coords.speed;
 
-            // Apply Kalman filter to smooth the speed
-            speedMps = kalmanFilter.filter(speedMps);
-
-            // Ignore very small speed values that may be noise
-            if (speedMps === null || speedMps < SPEED_THRESHOLD) {
-                speedMps = 0;
+            if (speedMps === null) {
+                document.getElementById('speed').innerText = 'Speed data is unavailable.';
+                return;
             }
 
-            // Determine if we are stationary based on position change
-            if (lastPosition) {
-                const distanceMoved = getDistanceFromLatLonInMeters(lastPosition.coords.latitude, lastPosition.coords.longitude, position.coords.latitude, position.coords.longitude);
-                if (distanceMoved < SPEED_THRESHOLD) {
-                    speedMps = 0;
-                }
-            }
-            lastPosition = position;
-
-            // Add new reading and maintain a fixed number of readings
-            speedReadings.push(speedMps);
-            if (speedReadings.length > MAX_READINGS) {
-                speedReadings.shift();
-            }
-
-            // Check for consecutive zero speed readings
-            const zeroSpeedCount = speedReadings.slice(-ZERO_SPEED_COUNT).filter(speed => speed === 0).length;
-            if (zeroSpeedCount >= ZERO_SPEED_COUNT) {
-                document.getElementById('averaged-speed').innerText = '0.00 MPH';
-            } else {
-                // Calculate average speed
-                let averageSpeedMps = speedReadings.reduce((a, b) => a + b, 0) / speedReadings.length;
-                let speedMph = averageSpeedMps * 2.23694;
-                document.getElementById('averaged-speed').innerText = speedMph.toFixed(2) + ' MPH';
-            }
-
-            // Display real-time speed
-            let realTimeSpeedMph = speedMps * 2.23694;
-            document.getElementById('realtime-speed').innerText = realTimeSpeedMph.toFixed(2) + ' MPH';
+            let speedMph = speedMps * 2.23694;
+            document.getElementById('speed').innerText = speedMph.toFixed(2) + ' MPH';
         }
 
         function showError(error) {
@@ -92,17 +25,21 @@
                 case error.POSITION_UNAVAILABLE:
                     alert("Location information is unavailable.");
                     break;
+                case error.TIMEOUT:
+                    alert("The request to get user location timed out.");
+                    break;
                 case error.UNKNOWN_ERROR:
                     alert("An unknown error occurred.");
                     break;
             }
         }
 
-        function pollLocation() {
+        function requestLocationPermission() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(calculateSpeed, showError, {
+                navigator.geolocation.watchPosition(calculateSpeed, showError, {
                     enableHighAccuracy: true,
                     maximumAge: 0,
+                    timeout: 5000
                 });
             } else {
                 alert("Geolocation is not supported by this browser.");
@@ -112,51 +49,25 @@
         document.addEventListener('DOMContentLoaded', (event) => {
             navigator.permissions.query({name: 'geolocation'}).then(function(result) {
                 if (result.state === 'granted') {
-                    setInterval(pollLocation, POLL_INTERVAL);
+                    requestLocationPermission();
                 } else if (result.state === 'prompt') {
-                    pollLocation();
-                    setInterval(pollLocation, POLL_INTERVAL);
+                    requestLocationPermission();
                 } else if (result.state === 'denied') {
                     alert("Location access is denied. Please enable it in your browser settings.");
                 }
                 result.onchange = function() {
                     if (result.state === 'granted') {
-                        setInterval(pollLocation, POLL_INTERVAL);
+                        requestLocationPermission();
                     } else if (result.state === 'denied') {
                         alert("Location access is denied. Please enable it in your browser settings.");
                     }
                 }
             });
         });
-
-        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-            var R = 6371e3; // Radius of the Earth in meters
-            var dLat = deg2rad(lat2 - lat1);
-            var dLon = deg2rad(lon2 - lon1);
-            var a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            var d = R * c; // Distance in meters
-            return d;
-        }
-
-        function deg2rad(deg) {
-            return deg * (Math.PI / 180);
-        }
     </script>
 </head>
 <body>
-    <h1>Speed Detection V1.4</h1>
-    <p id="accuracy-status">Ensure high accuracy mode is enabled on your device for best results. Steps:</p>
-    <ul>
-        <li>Open your device's "Settings".</li>
-        <li>Go to "Location" or "Location services".</li>
-        <li>Make sure "Location" is turned on.</li>
-        <li>Tap on "Mode" or "Location mode" (if available) and select "High accuracy".</li>
-    </ul>
-    <p>Current real-time speed: <span id="realtime-speed">Calculating...</span></p>
-    <p>Current averaged speed: <span id="averaged-speed">Calculating...</span></p>
+    <h1>Speed Detection V1.0</h1>
+    <p>Current speed: <span id="speed">Calculating...</span></p>
 </body>
 </html>
