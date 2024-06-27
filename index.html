@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speed Tracker V1.4</title>
+    <title>Speed Tracker V2.0</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,53 +16,52 @@
         p {
             font-size: 1.5em;
         }
+        button {
+            font-size: 1em;
+            padding: 10px 20px;
+            margin: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>Speed Tracker V1.4</h1>
+    <h1>Speed Tracker V2.0</h1>
     <p>Current Speed: <span id="speed">0</span> mph</p>
+    <button onclick="startTracking()">Start Tracking</button>
+    <button onclick="stopTracking()">Stop Tracking</button>
 
     <script>
-        let speedReadings = [];
-        const maxReadings = 5;
+        let watchID;
 
-        if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(showSpeed, handleError, {
-                enableHighAccuracy: true,
-                maximumAge: 100,
-                timeout: 500
-            });
-        } else {
-            alert("Geolocation is not supported by this browser.");
+        function startTracking() {
+            if (navigator.geolocation) {
+                watchID = navigator.geolocation.watchPosition(showSpeed, handleError, {
+                    enableHighAccuracy: true,
+                    maximumAge: 500,
+                    timeout: 1000
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        function stopTracking() {
+            if (navigator.geolocation && watchID !== undefined) {
+                navigator.geolocation.clearWatch(watchID);
+            }
         }
 
         function showSpeed(position) {
-            // Check if the accuracy of the location data is acceptable
-            if (position.coords.accuracy <= 10) {
-                // Speed in meters per second
-                let speedMps = position.coords.speed;
+            // Speed in meters per second
+            let speedMps = position.coords.speed;
 
-                if (speedMps !== null && speedMps >= 0) {
-                    // Convert to miles per hour (1 m/s = 2.23694 mph)
-                    let speedMph = speedMps * 2.23694;
+            // Convert to miles per hour (1 m/s = 2.23694 mph)
+            let speedMph = speedMps * 2.23694;
 
-                    // Add the new reading to the array
-                    speedReadings.push(speedMph);
+            // Count any speed under 0.25 mph as 0
+            speedMph = (speedMph < 0.25) ? 0 : speedMph.toFixed(2);
 
-                    // Keep only the latest maxReadings values
-                    if (speedReadings.length > maxReadings) {
-                        speedReadings.shift();
-                    }
-
-                    // Calculate the average speed
-                    let avgSpeed = speedReadings.reduce((a, b) => a + b, 0) / speedReadings.length;
-
-                    // Update the speed on the page
-                    document.getElementById("speed").innerText = avgSpeed.toFixed(2);
-                } else {
-                    document.getElementById("speed").innerText = 0;
-                }
-            }
+            // Update the speed on the page
+            document.getElementById("speed").innerText = speedMph;
         }
 
         function handleError(error) {
