@@ -3,24 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speed Detection V1.0</title>
+    <title>Speed Tracker</title>
+</head>
+<body>
+    <h1>Speed Tracker</h1>
+    <p>Current Speed: <span id="speed">0</span> mph</p>
+    <button onclick="startTracking()">Start Tracking</button>
+    <button onclick="stopTracking()">Stop Tracking</button>
+
     <script>
-        function calculateSpeed(position) {
-            let speedMps = position.coords.speed;
+        let watchID;
 
-            if (speedMps === null) {
-                document.getElementById('speed').innerText = 'Speed data is unavailable.';
-                return;
+        function startTracking() {
+            if (navigator.geolocation) {
+                watchID = navigator.geolocation.watchPosition(showSpeed, handleError, {
+                    enableHighAccuracy: true,
+                    maximumAge: 1000,
+                    timeout: 3000
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
             }
-
-            let speedMph = speedMps * 2.23694;
-            document.getElementById('speed').innerText = speedMph.toFixed(2) + ' MPH';
         }
 
-        function showError(error) {
+        function stopTracking() {
+            if (navigator.geolocation && watchID !== undefined) {
+                navigator.geolocation.clearWatch(watchID);
+            }
+        }
+
+        function showSpeed(position) {
+            // Speed in meters per second
+            let speedMps = position.coords.speed;
+
+            // Convert to miles per hour (1 m/s = 2.23694 mph)
+            let speedMph = speedMps * 2.23694;
+
+            // Round to 2 decimal places
+            speedMph = (speedMph) ? speedMph.toFixed(2) : 0;
+
+            // Update the speed on the page
+            document.getElementById("speed").innerText = speedMph;
+        }
+
+        function handleError(error) {
             switch(error.code) {
                 case error.PERMISSION_DENIED:
-                    alert("Permission denied. Please enable location permissions in your browser and device settings.");
+                    alert("User denied the request for Geolocation.");
                     break;
                 case error.POSITION_UNAVAILABLE:
                     alert("Location information is unavailable.");
@@ -33,41 +62,6 @@
                     break;
             }
         }
-
-        function requestLocationPermission() {
-            if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(calculateSpeed, showError, {
-                    enableHighAccuracy: true,
-                    maximumAge: 0,
-                    timeout: 5000
-                });
-            } else {
-                alert("Geolocation is not supported by this browser.");
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', (event) => {
-            navigator.permissions.query({name: 'geolocation'}).then(function(result) {
-                if (result.state === 'granted') {
-                    requestLocationPermission();
-                } else if (result.state === 'prompt') {
-                    requestLocationPermission();
-                } else if (result.state === 'denied') {
-                    alert("Location access is denied. Please enable it in your browser settings.");
-                }
-                result.onchange = function() {
-                    if (result.state === 'granted') {
-                        requestLocationPermission();
-                    } else if (result.state === 'denied') {
-                        alert("Location access is denied. Please enable it in your browser settings.");
-                    }
-                }
-            });
-        });
     </script>
-</head>
-<body>
-    <h1>Speed Detection V1.0</h1>
-    <p>Current speed: <span id="speed">Calculating...</span></p>
 </body>
 </html>
