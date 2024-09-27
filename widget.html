@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airport Electrification Impact Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            padding: 20px;
+            color: #4a90e2;
+        }
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        label {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 10px;
+            display: block;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4a90e2;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #357ABD;
+        }
+        h2 {
+            text-align: center;
+            padding: 20px;
+            color: #333;
+        }
+        canvas {
+            max-width: 1200px;
+            height: 800px; /* 4 times the original height */
+            margin: 0 auto;
+            display: block;
+            padding-bottom: 40px;
+        }
+        .container {
+            padding: 40px 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Airport Electrification Impact Calculator</h1>
+    
+    <div class="container">
+        <form id="calculatorForm">
+            <label for="fleetSize">Overall Fleet Size:</label>
+            <input type="number" id="fleetSize" name="fleetSize" placeholder="Enter the total fleet size">
+
+            <label for="dieselFleet">Diesel Fleet Size:</label>
+            <input type="number" id="dieselFleet" name="dieselFleet" placeholder="Enter the diesel fleet size">
+
+            <label for="airportSize">Airport Size (FAA Defined Category):</label>
+            <select id="airportSize" name="airportSize">
+                <option value="largeHub">Large Hub</option>
+                <option value="mediumHub">Medium Hub</option>
+                <option value="smallHub">Small Hub</option>
+                <option value="nonHub">Non-Hub</option>
+                <option value="generalAviation">General Aviation</option>
+            </select>
+
+            <label for="electricityInfrastructure">Electricity Infrastructure:</label>
+            <select id="electricityInfrastructure" name="electricityInfrastructure">
+                <option value="240V Single-Phase">240V Single-Phase</option>
+                <option value="208V Three-Phase">208V Three-Phase</option>
+                <option value="480V Three-Phase">480V Three-Phase</option>
+            </select>
+
+            <label for="region">Region (Hot, Cold, Moderate):</label>
+            <select id="region" name="region">
+                <option value="hot">Hot</option>
+                <option value="cold">Cold</option>
+                <option value="moderate">Moderate</option>
+            </select>
+
+            <button type="button" onclick="calculateImpact()">Calculate Impact</button>
+        </form>
+
+        <h2>Results (12 months projection):</h2>
+        <canvas id="impactChart"></canvas>
+    </div>
+
+    <script>
+        function calculateImpact() {
+            // Inputs
+            const fleetSize = parseInt(document.getElementById('fleetSize').value);
+            const dieselFleet = parseInt(document.getElementById('dieselFleet').value);
+            const airportSize = document.getElementById('airportSize').value;
+            const infrastructure = document.getElementById('electricityInfrastructure').value;
+            const region = document.getElementById('region').value;
+
+            // Assumptions
+            const fuelUsagePerDieselPerDay = 10; // gallons/day
+            const co2PerGallonDiesel = 2.68; // kg CO2 per gallon
+            const pollutantsPerGallonDiesel = 2.5; // kg pollutants (NOx, PM, etc.) per gallon
+
+            // Airport size multipliers (larger airports have more vehicle usage and emissions)
+            let airportSizeMultiplier = 1;
+            switch (airportSize) {
+                case 'largeHub':
+                    airportSizeMultiplier = 1.2; // 20% more fuel and emissions
+                    break;
+                case 'mediumHub':
+                    airportSizeMultiplier = 1.1; // 10% more
+                    break;
+                case 'nonHub':
+                    airportSizeMultiplier = 0.9; // 10% less
+                    break;
+                case 'generalAviation':
+                    airportSizeMultiplier = 0.85; // 15% less
+                    break;
+            }
+
+            // Infrastructure efficiency multipliers (charging efficiency affects savings)
+            let infrastructureMultiplier = 1;
+            switch (infrastructure) {
+                case '240V Single-Phase':
+                    infrastructureMultiplier = 0.9; // 10% less efficient
+                    break;
+                case '208V Three-Phase':
+                    infrastructureMultiplier = 0.95; // 5% less efficient
+                    break;
+                case '480V Three-Phase':
+                    infrastructureMultiplier = 1; // most efficient
+                    break;
+            }
+
+            // Get the current month and generate 12-month labels
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const monthLabels = [];
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+            for (let i = 0; i < 12; i++) {
+                monthLabels.push(monthNames[(currentMonth + i) % 12]);
+            }
+
+            // Adjustments based on season and region
+            function getSeasonalAdjustment(month) {
+                if (region === 'cold') {
+                    // Winter months: reduced efficiency due to heating
+                    if (month === 11 || month === 0 || month === 1) {
+                        return 0.9; // 10% reduction in efficiency in winter
+                    }
+                } else if (region === 'hot') {
+                    // Summer months: reduced efficiency due to cooling
+                    if (month === 5 || month === 6 || month === 7) {
+                        return 0.95; // 5% reduction in summer months
+                    }
+                }
+                // Default for spring, fall, and moderate regions
+                return 1.0;
+            }
+
+            // Calculate half of the diesel fleet to switch
+            const dieselFleetToSwitch = dieselFleet / 2;
+
+            // Monthly reductions, factoring in seasonal impacts and airport size/infrastructure
+            const pollutionReduction = [];
+            const fuelUsageReduction = [];
+            const emissionReduction = [];
+
+            for (let i = 0; i < 12; i++) {
+                const monthIndex = (currentMonth + i) % 12;
+                const seasonalAdjustment = getSeasonalAdjustment(monthIndex);
+
+                const adjustedFuelUsagePerMonth = dieselFleetToSwitch * fuelUsagePerDieselPerDay * 30 * seasonalAdjustment * airportSizeMultiplier;
+                const adjustedFuelUsageReduction = adjustedFuelUsagePerMonth * infrastructureMultiplier;
+                const pollutionReductionPerMonth = adjustedFuelUsageReduction * pollutantsPerGallonDiesel;
+                const emissionReductionPerMonth = adjustedFuelUsageReduction * co2PerGallonDiesel;
+
+                pollutionReduction.push(pollutionReductionPerMonth);
+                fuelUsageReduction.push(adjustedFuelUsageReduction);
+                emissionReduction.push(emissionReductionPerMonth);
+            }
+
+            // Render the graph
+            renderGraph(monthLabels, pollutionReduction, fuelUsageReduction, emissionReduction);
+        }
+
+        function renderGraph(monthLabels, pollutionReduction, fuelUsageReduction, emissionReduction) {
+            const ctx = document.getElementById('impactChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: [
+                        {
+                            label: 'Air Pollution Reduction (kg)',
+                            data: pollutionReduction,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            fill: false
+                        },
+                        {
+                            label: 'Fuel Usage Reduction (gallons)',
+                            data: fuelUsageReduction,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            fill: false
+                        },
+                        {
+                            label: 'Greenhouse Gas Emission Reduction (kg CO2)',
+                            data: emissionReduction,
+                            borderColor: 'rgba(153, 102, 255, 1)',
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true, // Y-axis will always start at 0
+                            title: {
+                                display: true,
+                                text: 'Reduction'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
